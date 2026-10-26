@@ -74,6 +74,7 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
+  cursorCommand = new Cursor({ x: e.offsetX, y: e.offsetY });
   if (cursor.active) {
     ctx.beginPath();
     ctx.moveTo(cursor.x, cursor.y);
