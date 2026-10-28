@@ -9,7 +9,7 @@ const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 
 const commands: Line[] = [];
 const redoCommands: Line[] = [];
-let cursorCommand: Cursor | null = null;
+//let cursorCommand: Cursor | null = null;
 const ctx = canvas.getContext("2d")!;
 const cursor = { active: false, x: 0, y: 0 };
 
@@ -89,7 +89,7 @@ canvas.addEventListener("mousemove", (e) => {
 });
 
 canvas.addEventListener("mouseenter", (e) => {
-  cursorCommand = new Cursor({ x: e.offsetX, y: e.offsetY });
+  //cursorCommand = new Cursor({ x: e.offsetX, y: e.offsetY });
 });
 
 canvas.addEventListener("mouseup", () => {
