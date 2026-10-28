@@ -22,6 +22,32 @@ interface Point {
   y: number;
 }
 
+interface Tool {
+  id: number;
+  color: string;
+  strokeSize: number;
+}
+
+const tools: Tool[] = [{
+  id: 0,
+  color: "black",
+  strokeSize: 4,
+}, {
+  id: 1,
+  color: "blue",
+  strokeSize: 4,
+}, {
+  id: 2,
+  color: "green",
+  strokeSize: 8,
+}, {
+  id: 3,
+  color: "red",
+  strokeSize: 2,
+}];
+
+let tool = tools[0];
+
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.execute);
@@ -38,11 +64,14 @@ redraw();
 
 class Line implements Command {
   points: Point[];
-  constructor(p: Point) {
+  tool: Tool;
+  constructor(p: Point, t: Tool) {
     this.points = [p];
+    this.tool = t;
   }
   execute(): void {
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = this.tool.color;
+    ctx.lineWidth = this.tool.strokeSize;
     ctx.beginPath();
     const { x, y } = this.points[0];
     ctx.moveTo(x, y);
@@ -65,7 +94,7 @@ class Line implements Command {
 let currentLineCommand: Line | null = null;
 
 canvas.addEventListener("mousedown", (e) => {
-  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY });
+  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
   commands.push(currentLineCommand);
   redoCommands.splice(0, redoCommands.length);
   cursor.active = true;
@@ -74,12 +103,15 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY });
+  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
   if (cursor.active) {
     ctx.beginPath();
     ctx.moveTo(cursor.x, cursor.y);
     ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.strokeStyle = tool.color;
+    ctx.lineWidth = tool.strokeSize;
     ctx.stroke();
+    console.log(ctx.strokeStyle);
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
   }
@@ -95,7 +127,22 @@ canvas.addEventListener("mousemove", (e) => {
 canvas.addEventListener("mouseup", () => {
   cursor.active = false;
 });
-
+const nextTool = document.getElementById("nextTool")! as HTMLButtonElement;
+nextTool.addEventListener("click", () => {
+  if (tool.id + 1 == tools.length) {
+    tool = tools[0];
+  } else {
+    tool = tools[tool.id + 1];
+  }
+});
+const lastTool = document.getElementById("lastTool")! as HTMLButtonElement;
+lastTool.addEventListener("click", () => {
+  if (tool.id - 1 < 0) {
+    tool = tools[tools.length - 1];
+  } else {
+    tool = tools[tool.id - 1];
+  }
+});
 const clearButton = document.getElementById("clear")! as HTMLButtonElement;
 
 clearButton.addEventListener("click", () => {
