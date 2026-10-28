@@ -54,13 +54,13 @@ class Line implements Command {
   }
 }
 
-class Cursor implements Command {
+/*class Cursor implements Command {
   constructor(private p: Point) {}
   execute(): void {
     ctx.font = "32px monospace";
     ctx.fillText("*", this.p.x - 8, this.p.y + 16);
   }
-}
+}*/
 
 let currentLineCommand: Line | null = null;
 
@@ -88,9 +88,9 @@ canvas.addEventListener("mousemove", (e) => {
   }
 });
 
-canvas.addEventListener("mouseenter", (e) => {
+/*canvas.addEventListener("mouseenter", (e) => {
   //cursorCommand = new Cursor({ x: e.offsetX, y: e.offsetY });
-});
+});*/
 
 canvas.addEventListener("mouseup", () => {
   cursor.active = false;
