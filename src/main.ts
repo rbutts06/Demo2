@@ -7,8 +7,8 @@ app.append(message);
 
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 
-const commands: Line[] = [];
-const redoCommands: Line[] = [];
+const commands: (Line | Sticker)[] = [];
+const redoCommands: (Line | Sticker)[] = [];
 //let cursorCommand: Cursor | null = null;
 const ctx = canvas.getContext("2d")!;
 const cursor = { active: false, x: 0, y: 0 };
@@ -23,43 +23,51 @@ interface Point {
 }
 
 interface Tool {
-  id: number;
   color: string;
   strokeSize: number;
 }
 
-const tools: Tool[] = [{
-  id: 0,
-  color: "black",
-  strokeSize: 4,
+interface StickerTool {
+  emoji: string;
+}
+
+const stickers: StickerTool[] = [{
+  emoji: "🧟‍♂️",
 }, {
-  id: 1,
-  color: "blue",
-  strokeSize: 4,
+  emoji: "🎃",
 }, {
-  id: 2,
-  color: "green",
-  strokeSize: 8,
+  emoji: "💀",
 }, {
-  id: 3,
-  color: "red",
-  strokeSize: 2,
+  emoji: "👻",
+}, {
+  emoji: "🪦",
 }];
 
-let tool = tools[0];
+const tool: Tool = {
+  color: "black",
+  strokeSize: 4,
+};
+let toolActive: boolean = true;
+
+let currentSticker: StickerTool = {
+  emoji: "",
+};
+let stickerActive: boolean = false;
+const colors: string[] = [
+  "black",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+];
 
 function redraw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  commands.forEach((cmd) => cmd.execute);
+  //ctx.clearRect(0, 0, canvas.width, canvas.height);
+  commands.forEach((cmd) => cmd.execute());
+}
 
-  /*if (cursorCommand) {
-    cursorCommand?.execute();
-  }*/
-}
-/*function tick() {
-  redraw();
-}
-tick();*/
 redraw();
 
 class Line implements Command {
@@ -69,33 +77,35 @@ class Line implements Command {
     this.points = [p];
     this.tool = t;
   }
-  execute(): void {
+  execute() {
     ctx.strokeStyle = this.tool.color;
     ctx.lineWidth = this.tool.strokeSize;
     ctx.beginPath();
     const { x, y } = this.points[0];
     ctx.moveTo(x, y);
-    for (const { x, y } of this.points) {
-      const k = 2;
-      ctx.lineTo(x + Math.random() * k, y + Math.random() * k);
-    }
     ctx.stroke();
   }
 }
 
-/*class Cursor implements Command {
-  constructor(private p: Point) {}
-  execute(): void {
-    ctx.font = "32px monospace";
-    ctx.fillText("*", this.p.x - 8, this.p.y + 16);
+class Sticker implements Command {
+  points: Point;
+  sticker: StickerTool;
+  constructor(p: Point, s: StickerTool) {
+    this.points = p;
+    this.sticker = s;
   }
-}*/
+  execute(): void {
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(this.sticker.emoji, this.points.x, this.points.y);
+  }
+}
 
-let currentLineCommand: Line | null = null;
+let currentCommand: Line | Sticker | null = null;
 
 canvas.addEventListener("mousedown", (e) => {
-  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
-  commands.push(currentLineCommand);
+  currentCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
+  commands.push(currentCommand);
   redoCommands.splice(0, redoCommands.length);
   cursor.active = true;
   cursor.x = e.offsetX;
@@ -103,7 +113,17 @@ canvas.addEventListener("mousedown", (e) => {
 });
 
 canvas.addEventListener("mousemove", (e) => {
-  currentLineCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
+  if (toolActive) {
+    currentCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
+    commands.push(currentCommand);
+  }
+  if (stickerActive) {
+    currentCommand = new Sticker(
+      { x: e.offsetX, y: e.offsetY },
+      currentSticker,
+    );
+    commands.push(currentCommand);
+  }
   if (cursor.active) {
     ctx.beginPath();
     ctx.moveTo(cursor.x, cursor.y);
@@ -115,34 +135,81 @@ canvas.addEventListener("mousemove", (e) => {
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
   }
-  if (e.buttons == 1) {
-    currentLineCommand.points.push({ x: e.offsetX, y: e.offsetY });
-  }
+
+  //what does this do??
+  /*if (e.buttons == 1) {
+    currentCommand?.points.push({ x: e.offsetX, y: e.offsetY });
+  }*/
 });
 
-/*canvas.addEventListener("mouseenter", (e) => {
-  //cursorCommand = new Cursor({ x: e.offsetX, y: e.offsetY });
-});*/
-
 canvas.addEventListener("mouseup", () => {
+  redraw();
   cursor.active = false;
 });
 const nextTool = document.getElementById("nextTool")! as HTMLButtonElement;
 nextTool.addEventListener("click", () => {
-  if (tool.id + 1 == tools.length) {
-    tool = tools[0];
+  toolActive = true;
+  const index = colors.indexOf(String(tool.color));
+  if (index + 1 == colors.length) {
+    tool.color = colors[0];
   } else {
-    tool = tools[tool.id + 1];
+    tool.color = colors[index + 1];
   }
 });
 const lastTool = document.getElementById("lastTool")! as HTMLButtonElement;
 lastTool.addEventListener("click", () => {
-  if (tool.id - 1 < 0) {
-    tool = tools[tools.length - 1];
+  toolActive = true;
+  const index = colors.indexOf(String(tool.color));
+  if (index - 1 < 0) {
+    tool.color = colors[colors.length - 1];
   } else {
-    tool = tools[tool.id - 1];
+    tool.color = colors[index - 1];
   }
 });
+
+const thickButton = document.getElementById("thick")! as HTMLButtonElement;
+thickButton.addEventListener("click", () => {
+  toolActive = true;
+  if (tool.strokeSize + 2 < 11) tool.strokeSize += 2;
+});
+
+const thinButton = document.getElementById("thin")! as HTMLButtonElement;
+thinButton.addEventListener("click", () => {
+  toolActive = true;
+  if (tool.strokeSize - 2 > 1) tool.strokeSize -= 2;
+});
+
+const zombieButton = document.getElementById("zombie")! as HTMLButtonElement;
+zombieButton.addEventListener("click", () => {
+  toolActive = false;
+  stickerActive = true;
+  currentSticker = stickers[0];
+});
+const pumpkinButton = document.getElementById("pumpkin")! as HTMLButtonElement;
+pumpkinButton.addEventListener("click", () => {
+  toolActive = false;
+  stickerActive = true;
+  currentSticker = stickers[1];
+});
+const skullButton = document.getElementById("skull")! as HTMLButtonElement;
+skullButton.addEventListener("click", () => {
+  toolActive = false;
+  stickerActive = true;
+  currentSticker = stickers[2];
+});
+const ghostButton = document.getElementById("ghost")! as HTMLButtonElement;
+ghostButton.addEventListener("click", () => {
+  toolActive = false;
+  stickerActive = true;
+  currentSticker = stickers[3];
+});
+const graveButton = document.getElementById("grave")! as HTMLButtonElement;
+graveButton.addEventListener("click", () => {
+  toolActive = false;
+  stickerActive = true;
+  currentSticker = stickers[4];
+});
+
 const clearButton = document.getElementById("clear")! as HTMLButtonElement;
 
 clearButton.addEventListener("click", () => {
