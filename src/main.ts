@@ -5,6 +5,11 @@ message.textContent = "Your project starts here.";
 
 app.append(message);
 
+import { Command } from "./interfaces.ts";
+import { Point } from "./interfaces.ts";
+import { Tool } from "./interfaces.ts";
+import { StickerTool } from "./interfaces.ts";
+
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 
 const commands: (Line | Sticker)[] = [];
@@ -12,24 +17,6 @@ const redoCommands: (Line | Sticker)[] = [];
 //let cursorCommand: Cursor | null = null;
 const ctx = canvas.getContext("2d")!;
 const cursor = { active: false, x: 0, y: 0 };
-
-interface Command {
-  execute(): void;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface Tool {
-  color: string;
-  strokeSize: number;
-}
-
-interface StickerTool {
-  emoji: string;
-}
 
 const stickers: StickerTool[] = [{
   emoji: "🧟‍♂️",
@@ -53,6 +40,7 @@ let currentSticker: StickerTool = {
   emoji: "",
 };
 let stickerActive: boolean = false;
+
 const colors: string[] = [
   "black",
   "red",
@@ -131,21 +119,16 @@ canvas.addEventListener("mousemove", (e) => {
     ctx.strokeStyle = tool.color;
     ctx.lineWidth = tool.strokeSize;
     ctx.stroke();
-    console.log(ctx.strokeStyle);
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
   }
-
-  //what does this do??
-  /*if (e.buttons == 1) {
-    currentCommand?.points.push({ x: e.offsetX, y: e.offsetY });
-  }*/
 });
 
 canvas.addEventListener("mouseup", () => {
   redraw();
   cursor.active = false;
 });
+
 const nextTool = document.getElementById("nextTool")! as HTMLButtonElement;
 nextTool.addEventListener("click", () => {
   toolActive = true;
@@ -156,6 +139,7 @@ nextTool.addEventListener("click", () => {
     tool.color = colors[index + 1];
   }
 });
+
 const lastTool = document.getElementById("lastTool")! as HTMLButtonElement;
 lastTool.addEventListener("click", () => {
   toolActive = true;
@@ -185,24 +169,28 @@ zombieButton.addEventListener("click", () => {
   stickerActive = true;
   currentSticker = stickers[0];
 });
+
 const pumpkinButton = document.getElementById("pumpkin")! as HTMLButtonElement;
 pumpkinButton.addEventListener("click", () => {
   toolActive = false;
   stickerActive = true;
   currentSticker = stickers[1];
 });
+
 const skullButton = document.getElementById("skull")! as HTMLButtonElement;
 skullButton.addEventListener("click", () => {
   toolActive = false;
   stickerActive = true;
   currentSticker = stickers[2];
 });
+
 const ghostButton = document.getElementById("ghost")! as HTMLButtonElement;
 ghostButton.addEventListener("click", () => {
   toolActive = false;
   stickerActive = true;
   currentSticker = stickers[3];
 });
+
 const graveButton = document.getElementById("grave")! as HTMLButtonElement;
 graveButton.addEventListener("click", () => {
   toolActive = false;
