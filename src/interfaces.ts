@@ -15,3 +15,8 @@ export interface Tool {
 export interface StickerTool {
   emoji: string;
 }
+
+export interface StickerButton {
+  elId: string;
+  index: number;
+}

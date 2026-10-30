@@ -9,6 +9,7 @@ import { Command } from "./interfaces.ts";
 import { Point } from "./interfaces.ts";
 import { Tool } from "./interfaces.ts";
 import { StickerTool } from "./interfaces.ts";
+import { StickerButton } from "./interfaces.ts";
 
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 
@@ -163,41 +164,6 @@ thinButton.addEventListener("click", () => {
   if (tool.strokeSize - 2 > 1) tool.strokeSize -= 2;
 });
 
-const zombieButton = document.getElementById("zombie")! as HTMLButtonElement;
-zombieButton.addEventListener("click", () => {
-  toolActive = false;
-  stickerActive = true;
-  currentSticker = stickers[0];
-});
-
-const pumpkinButton = document.getElementById("pumpkin")! as HTMLButtonElement;
-pumpkinButton.addEventListener("click", () => {
-  toolActive = false;
-  stickerActive = true;
-  currentSticker = stickers[1];
-});
-
-const skullButton = document.getElementById("skull")! as HTMLButtonElement;
-skullButton.addEventListener("click", () => {
-  toolActive = false;
-  stickerActive = true;
-  currentSticker = stickers[2];
-});
-
-const ghostButton = document.getElementById("ghost")! as HTMLButtonElement;
-ghostButton.addEventListener("click", () => {
-  toolActive = false;
-  stickerActive = true;
-  currentSticker = stickers[3];
-});
-
-const graveButton = document.getElementById("grave")! as HTMLButtonElement;
-graveButton.addEventListener("click", () => {
-  toolActive = false;
-  stickerActive = true;
-  currentSticker = stickers[4];
-});
-
 const clearButton = document.getElementById("clear")! as HTMLButtonElement;
 
 clearButton.addEventListener("click", () => {
@@ -221,3 +187,23 @@ redoButton.addEventListener("click", () => {
     redraw();
   }
 });
+
+const _zombieButton = createStickerButton({ elId: "zombie", index: 0 });
+
+const _pumpkinButton = createStickerButton({ elId: "pumpkin", index: 1 });
+
+const _skullButton = createStickerButton({ elId: "skull", index: 2 });
+
+const _ghostButton = createStickerButton({ elId: "ghost", index: 3 });
+
+const _graveButton = createStickerButton({ elId: "grave", index: 4 });
+
+function createStickerButton(sticker: StickerButton) {
+  const button = document.getElementById(sticker.elId)! as HTMLButtonElement;
+  button.addEventListener("click", () => {
+    toolActive = false;
+    stickerActive = true;
+    currentSticker = stickers[sticker.index];
+    return button;
+  });
+}
