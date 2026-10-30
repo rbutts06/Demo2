@@ -1,70 +1,34 @@
-const app = document.querySelector<HTMLElement>("#app")!;
-
-const message = document.createElement("p");
-message.textContent = "Your project starts here.";
-
-app.append(message);
-
-import { Command } from "./interfaces.ts";
-import { Point } from "./interfaces.ts";
-import { Tool } from "./interfaces.ts";
-import { StickerTool } from "./interfaces.ts";
-import { StickerButton } from "./interfaces.ts";
-
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 
-const commands: (Line | Sticker)[] = [];
-const redoCommands: (Line | Sticker)[] = [];
-//let cursorCommand: Cursor | null = null;
-const ctx = canvas.getContext("2d")!;
-const cursor = { active: false, x: 0, y: 0 };
-
-const stickers: StickerTool[] = [{
-  emoji: "🧟‍♂️",
-}, {
-  emoji: "🎃",
-}, {
-  emoji: "💀",
-}, {
-  emoji: "👻",
-}, {
-  emoji: "🪦",
-}];
-
-const tool: Tool = {
-  color: "black",
-  strokeSize: 4,
-};
-let toolActive: boolean = true;
-
-let currentSticker: StickerTool = {
-  emoji: "",
-};
-let stickerActive: boolean = false;
-
-const colors: string[] = [
-  "black",
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-];
-
-function redraw() {
-  //ctx.clearRect(0, 0, canvas.width, canvas.height);
-  commands.forEach((cmd) => cmd.execute());
+interface Command {
+  execute(): void;
 }
 
-redraw();
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface PenTool {
+  color: string;
+  strokeSize: number;
+}
+
+interface StickerTool {
+  emoji: string;
+}
+
+interface StickerButton {
+  elId: string;
+  index: number;
+}
 
 class Line implements Command {
   points: Point[];
-  tool: Tool;
-  constructor(p: Point, t: Tool) {
+  tool: PenTool;
+  constructor(p: Point, t: PenTool) {
     this.points = [p];
-    this.tool = t;
+    this.tool = structuredClone(t);
   }
   execute() {
     ctx.strokeStyle = this.tool.color;
@@ -72,6 +36,9 @@ class Line implements Command {
     ctx.beginPath();
     const { x, y } = this.points[0];
     ctx.moveTo(x, y);
+    for (const { x, y } of this.points) {
+      ctx.lineTo(x, y);
+    }
     ctx.stroke();
   }
 }
@@ -90,78 +57,123 @@ class Sticker implements Command {
   }
 }
 
-let currentCommand: Line | Sticker | null = null;
+const commands: Command[] = [];
+const redoCommands: Command[] = [];
+const ctx = canvas.getContext("2d")!;
+const cursor = { active: false, x: 0, y: 0 };
+
+const stickers: StickerTool[] = [{
+  emoji: "🧟‍♂️",
+}, {
+  emoji: "🎃",
+}, {
+  emoji: "💀",
+}, {
+  emoji: "👻",
+}, {
+  emoji: "🪦",
+}];
+
+const tool: PenTool = {
+  color: "black",
+  strokeSize: 4,
+};
+
+let currentSticker: StickerTool | null = null;
+
+let currentMode: "sticker" | "marker" = "marker";
+
+const colors: string[] = [
+  "black",
+  "red",
+  "orange",
+  "yellow",
+  "green",
+  "blue",
+  "purple",
+];
+
+function redraw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  commands.forEach((cmd) => cmd.execute());
+}
+
+redraw();
+
+let currentCommand: Command | null = null;
 
 canvas.addEventListener("mousedown", (e) => {
-  currentCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
-  commands.push(currentCommand);
-  redoCommands.splice(0, redoCommands.length);
-  cursor.active = true;
-  cursor.x = e.offsetX;
-  cursor.y = e.offsetY;
-});
-
-canvas.addEventListener("mousemove", (e) => {
-  if (toolActive) {
+  if (currentMode == "marker") {
     currentCommand = new Line({ x: e.offsetX, y: e.offsetY }, tool);
     commands.push(currentCommand);
-  }
-  if (stickerActive) {
+  } else if (currentSticker) {
     currentCommand = new Sticker(
       { x: e.offsetX, y: e.offsetY },
       currentSticker,
     );
     commands.push(currentCommand);
   }
-  if (cursor.active) {
-    ctx.beginPath();
-    ctx.moveTo(cursor.x, cursor.y);
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.strokeStyle = tool.color;
-    ctx.lineWidth = tool.strokeSize;
-    ctx.stroke();
-    cursor.x = e.offsetX;
-    cursor.y = e.offsetY;
+  redoCommands.splice(0, redoCommands.length);
+  cursor.active = true;
+  cursor.x = e.offsetX;
+  cursor.y = e.offsetY;
+  redraw();
+});
+
+canvas.addEventListener("mousemove", (e) => {
+  if (!currentCommand || !cursor.active) {
+    return;
   }
+  if (currentMode == "marker") {
+    const currentLine = currentCommand as Line;
+    currentLine.points.push({ x: e.offsetX, y: e.offsetY });
+  } else if (currentSticker) {
+    currentCommand = new Sticker(
+      { x: e.offsetX, y: e.offsetY },
+      currentSticker,
+    );
+    commands.push(currentCommand);
+  }
+  redraw();
 });
 
 canvas.addEventListener("mouseup", () => {
   redraw();
   cursor.active = false;
+  currentCommand = null;
 });
 
-const nextTool = document.getElementById("nextTool")! as HTMLButtonElement;
-nextTool.addEventListener("click", () => {
-  toolActive = true;
+const nextColor = document.getElementById("nextTool")! as HTMLButtonElement;
+nextColor.addEventListener("click", () => {
+  currentMode = "marker";
   const index = colors.indexOf(String(tool.color));
-  if (index + 1 == colors.length) {
-    tool.color = colors[0];
-  } else {
-    tool.color = colors[index + 1];
-  }
+  tool.color = colors[(index + 1) % colors.length];
 });
 
-const lastTool = document.getElementById("lastTool")! as HTMLButtonElement;
-lastTool.addEventListener("click", () => {
-  toolActive = true;
+const lastColor = document.getElementById("lastTool")! as HTMLButtonElement;
+lastColor.addEventListener("click", () => {
+  currentMode = "marker";
   const index = colors.indexOf(String(tool.color));
-  if (index - 1 < 0) {
-    tool.color = colors[colors.length - 1];
-  } else {
-    tool.color = colors[index - 1];
-  }
+  tool.color = colors[(colors.length + index - 1) % colors.length]; // js negative modulo hack
 });
+
+const STROKE_INCREMENT = 2;
+const STROKE_MAX = 11;
 
 const thickButton = document.getElementById("thick")! as HTMLButtonElement;
 thickButton.addEventListener("click", () => {
-  toolActive = true;
-  if (tool.strokeSize + 2 < 11) tool.strokeSize += 2;
+  currentMode = "marker";
+  if (tool.strokeSize + STROKE_INCREMENT < STROKE_MAX) {
+    tool.strokeSize += STROKE_INCREMENT;
+  }
 });
 
 const thinButton = document.getElementById("thin")! as HTMLButtonElement;
 thinButton.addEventListener("click", () => {
-  toolActive = true;
-  if (tool.strokeSize - 2 > 1) tool.strokeSize -= 2;
+  currentMode = "marker";
+  if (tool.strokeSize - STROKE_INCREMENT > 1) {
+    tool.strokeSize -= STROKE_INCREMENT;
+  }
 });
 
 const clearButton = document.getElementById("clear")! as HTMLButtonElement;
@@ -173,7 +185,7 @@ clearButton.addEventListener("click", () => {
 const undoButton = document.getElementById("undo")! as HTMLButtonElement;
 
 undoButton.addEventListener("click", () => {
-  if (commands.length > 0) {
+  if (commands.length) {
     redoCommands.push(commands.pop()!);
     redraw();
   }
@@ -182,7 +194,7 @@ undoButton.addEventListener("click", () => {
 const redoButton = document.getElementById("redo")! as HTMLButtonElement;
 
 redoButton.addEventListener("click", () => {
-  if (redoCommands.length > 0) {
+  if (redoCommands.length) {
     commands.push(redoCommands.pop()!);
     redraw();
   }
@@ -201,8 +213,7 @@ const _graveButton = createStickerButton({ elId: "grave", index: 4 });
 function createStickerButton(sticker: StickerButton) {
   const button = document.getElementById(sticker.elId)! as HTMLButtonElement;
   button.addEventListener("click", () => {
-    toolActive = false;
-    stickerActive = true;
+    currentMode = "sticker";
     currentSticker = stickers[sticker.index];
     return button;
   });
