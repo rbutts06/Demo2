@@ -158,6 +158,9 @@ const clearButton = document.getElementById("clear")! as HTMLButtonElement;
 
 clearButton.addEventListener("click", () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  commands.length = 0;
+  redoCommands.length = 0;
+  redraw(ctx);
 });
 
 const undoButton = document.getElementById("undo")! as HTMLButtonElement;
@@ -221,6 +224,7 @@ function createExportCanvas(scale: number): HTMLCanvasElement {
   exportCanvas.width = canvas.width * scale;
   exportCanvas.height = canvas.height * scale;
   const exportContext = exportCanvas.getContext("2d");
+  exportContext?.scale(2, 2);
   redraw(exportContext!);
   return exportCanvas;
 }
