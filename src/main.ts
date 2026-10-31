@@ -1,5 +1,6 @@
 const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
-
+canvas.width = 400;
+canvas.height = 400;
 interface Command {
   execute(): void;
 }
