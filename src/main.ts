@@ -83,16 +83,6 @@ let currentSticker: StickerTool | null = null;
 
 let currentMode: "sticker" | "marker" = "marker";
 
-const colors: string[] = [
-  "black",
-  "red",
-  "orange",
-  "yellow",
-  "green",
-  "blue",
-  "purple",
-];
-
 function redraw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   commands.forEach((cmd) => cmd.execute());
@@ -143,20 +133,6 @@ canvas.addEventListener("mouseup", () => {
   currentCommand = null;
 });
 
-const nextColor = document.getElementById("nextTool")! as HTMLButtonElement;
-nextColor.addEventListener("click", () => {
-  currentMode = "marker";
-  const index = colors.indexOf(String(tool.color));
-  tool.color = colors[(index + 1) % colors.length];
-});
-
-const lastColor = document.getElementById("lastTool")! as HTMLButtonElement;
-lastColor.addEventListener("click", () => {
-  currentMode = "marker";
-  const index = colors.indexOf(String(tool.color));
-  tool.color = colors[(colors.length + index - 1) % colors.length]; // js negative modulo hack
-});
-
 const STROKE_INCREMENT = 2;
 const STROKE_MAX = 11;
 
@@ -201,13 +177,9 @@ redoButton.addEventListener("click", () => {
 });
 
 const _zombieButton = createStickerButton({ elId: "zombie", index: 0 });
-
 const _pumpkinButton = createStickerButton({ elId: "pumpkin", index: 1 });
-
 const _skullButton = createStickerButton({ elId: "skull", index: 2 });
-
 const _ghostButton = createStickerButton({ elId: "ghost", index: 3 });
-
 const _graveButton = createStickerButton({ elId: "grave", index: 4 });
 
 function createStickerButton(sticker: StickerButton) {
@@ -218,3 +190,14 @@ function createStickerButton(sticker: StickerButton) {
     return button;
   });
 }
+
+const colorInput = document.createElement("input");
+colorInput.type = "color";
+colorInput.value = tool.color;
+document.body.append(colorInput);
+
+colorInput.addEventListener("input", (event: Event) => {
+  currentMode = "marker";
+  const target = event.target as HTMLInputElement;
+  tool.color = target.value;
+});
