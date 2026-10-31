@@ -2,7 +2,7 @@ const canvas = document.getElementById("canvas")! as HTMLCanvasElement;
 canvas.width = 400;
 canvas.height = 400;
 interface Command {
-  execute(): void;
+  execute(ctx: CanvasRenderingContext2D): void;
 }
 
 interface Point {
@@ -31,7 +31,7 @@ class Line implements Command {
     this.points = [p];
     this.tool = structuredClone(t);
   }
-  execute() {
+  execute(ctx: CanvasRenderingContext2D) {
     ctx.strokeStyle = this.tool.color;
     ctx.lineWidth = this.tool.strokeSize;
     ctx.beginPath();
@@ -51,8 +51,9 @@ class Sticker implements Command {
     this.points = p;
     this.sticker = s;
   }
-  execute(): void {
+  execute(ctx: CanvasRenderingContext2D): void {
     ctx.textAlign = "center";
+    ctx.font = "90px";
     ctx.textBaseline = "middle";
     ctx.fillText(this.sticker.emoji, this.points.x, this.points.y);
   }
@@ -84,12 +85,12 @@ let currentSticker: StickerTool | null = null;
 
 let currentMode: "sticker" | "marker" = "marker";
 
-function redraw() {
+function redraw(ctx: CanvasRenderingContext2D) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  commands.forEach((cmd) => cmd.execute());
+  commands.forEach((cmd) => cmd.execute(ctx));
 }
 
-redraw();
+redraw(ctx);
 
 let currentCommand: Command | null = null;
 
@@ -108,7 +109,7 @@ canvas.addEventListener("mousedown", (e) => {
   cursor.active = true;
   cursor.x = e.offsetX;
   cursor.y = e.offsetY;
-  redraw();
+  redraw(ctx);
 });
 
 canvas.addEventListener("mousemove", (e) => {
@@ -125,11 +126,11 @@ canvas.addEventListener("mousemove", (e) => {
     );
     commands.push(currentCommand);
   }
-  redraw();
+  redraw(ctx);
 });
 
 canvas.addEventListener("mouseup", () => {
-  redraw();
+  redraw(ctx);
   cursor.active = false;
   currentCommand = null;
 });
@@ -164,7 +165,7 @@ const undoButton = document.getElementById("undo")! as HTMLButtonElement;
 undoButton.addEventListener("click", () => {
   if (commands.length) {
     redoCommands.push(commands.pop()!);
-    redraw();
+    redraw(ctx);
   }
 });
 
@@ -173,7 +174,7 @@ const redoButton = document.getElementById("redo")! as HTMLButtonElement;
 redoButton.addEventListener("click", () => {
   if (redoCommands.length) {
     commands.push(redoCommands.pop()!);
-    redraw();
+    redraw(ctx);
   }
 });
 
@@ -201,4 +202,30 @@ colorInput.addEventListener("input", (event: Event) => {
   currentMode = "marker";
   const target = event.target as HTMLInputElement;
   tool.color = target.value;
+});
+
+function exportPNG() {
+  const exportCanvas = createExportCanvas(2);
+
+  const imageURL = exportCanvas.toDataURL("image/png");
+
+  const link = document.createElement("a");
+  link.href = imageURL;
+  link.download = "halloween-sketch.png";
+
+  link.click();
+}
+
+function createExportCanvas(scale: number): HTMLCanvasElement {
+  const exportCanvas = document.createElement("canvas")! as HTMLCanvasElement;
+  exportCanvas.width = canvas.width * scale;
+  exportCanvas.height = canvas.height * scale;
+  const exportContext = exportCanvas.getContext("2d");
+  redraw(exportContext!);
+  return exportCanvas;
+}
+
+const exportButton = document.getElementById("export")! as HTMLButtonElement;
+exportButton.addEventListener("click", () => {
+  exportPNG();
 });
